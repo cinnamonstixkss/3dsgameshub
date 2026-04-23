@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Switch UI</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+body {
+    margin: 0;
+    background: #1c1c1e;
+    font-family: 'Quicksand', sans-serif;
+    color: white;
+    overflow: hidden;
+}
+
+.game-title-top {
+    text-align: center;
+    font-size: 24px;
+    margin-top: 20px;
+    font-weight: 600;
+    height: 30px;
+}
+
+.game-row {
+    display: flex;
+    gap: 20px;
+    padding: 60px 40px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+}
+
+.game {
+    flex: 0 0 160px;
+    height: 160px;
+    border-radius: 20px;
+    transition: transform 0.25s, box-shadow 0.25s, opacity 0.3s;
+    cursor: pointer;
+}
+
+.game img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+}
+
+.game.selected {
+    transform: scale(1.2);
+    box-shadow:
+        0 0 0 4px white,
+        0 10px 30px rgba(255,255,255,0.4);
+}
+
+.game[data-disabled="true"] {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.zooming {
+    transform: scale(1.35) !important;
+    transition: transform 0.35s ease;
+}
+
+.menu-screen {
+    position: fixed;
+    inset: 0;
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.menu-screen.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.menu-btn {
+    width: 240px;
+    padding: 16px;
+    background: #2c2c2e;
+    border-radius: 14px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.menu-btn:hover {
+    background: #3a3a3c;
+}
+
+/* NEW FOOTER */
+.footer-text {
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    opacity: 0.7;
+}
+</style>
+</head>
+
+<body>
+
+<div class="game-title-top" id="title"></div>
+
+<div class="game-row">
+
+    <div class="game"
+         data-title="Tomodachi Life (USA)"
+         data-link="https://drive.google.com/file/d/1db-pNC-5NQIyWEikDsEnpauMjBzluicu/view?usp=sharing"
+         data-btn="Download">
+        <img src="https://static.wikia.nocookie.net/tomodachi/images/7/70/Tomodachi-life-us-box-art.png/revision/latest?cb=20260208140447">
+    </div>
+
+    <div class="game" data-title="Tomodachi Life (Europe)" data-link="https://drive.google.com/file/d/1a8-GUK0wu3O0D29xhXNDCATUk8rGGjAr/view?usp=sharing" data-btn="Download">
+        <img src="https://static.wikia.nocookie.net/tomodachi/images/9/95/Tomodachi_EU.png/revision/latest?cb=20140413120549">
+    </div>
+
+    <div class="game"
+         data-title="Tomodachi Life (Japan)"
+         data-disabled="true">
+        <img src="https://static.wikia.nocookie.net/tomodachi/images/2/25/Tomodachi_JP.jpg/revision/latest?cb=20140413120811">
+    </div>
+
+    <div class="game" data-title="Tomodachi Life (Korea)" data-link="https://drive.google.com/file/d/1db-pNC-5NQIyWEikDsEnpauMjBzluicu/view?usp=sharing" data-btn="Download">
+        <img src="https://static.wikia.nocookie.net/tomodachi/images/9/9c/A44671365.jpg/revision/latest?cb=20140730041625">
+    </div>
+
+    <div class="game" data-title="errfix.3ds" data-link="https://drive.google.com/file/d/1o6ms8JZjzwdNULElpPU4upTVeyC1z8G1/view?usp=sharing" data-btn="Download">
+        <img src="https://i.postimg.cc/BtWWRDdZ/IMG-4670.png">
+    </div>
+
+    <div class="game"
+         data-title="Coming Soon..."
+         data-disabled="true">
+        <img src="https://via.placeholder.com/160x160?text=Locked">
+    </div>
+
+</div>
+
+<div class="menu-screen" id="menu">
+    <div class="menu-btn" id="btn"></div>
+</div>
+
+<!-- BOTTOM TEXT -->
+<div class="footer-text">PLEASE MAKE SURE YOU DONT DOWNLOAD STUFF YOU DO NOT OWN!! PIRACY IS ILLEGAL</div>
+
+<audio id="selectSound" src="https://granny.anondrop.net/uploads/d7e7e49099750e0b/copy_54A15E99-956A-44F3-B177-FCD2DA4BFD4A.mp3"></audio>
+<audio id="openSound" src="https://granny.anondrop.net/uploads/d7e7e49099750e0b/copy_54A15E99-956A-44F3-B177-FCD2DA4BFD4A.mp3"></audio>
+
+<script>
+const games = document.querySelectorAll('.game');
+const title = document.getElementById('title');
+const menu = document.getElementById('menu');
+const btn = document.getElementById('btn');
+
+const selectSound = document.getElementById('selectSound');
+const openSound = document.getElementById('openSound');
+
+let current = 0;
+
+function play(sound) {
+    sound.pause();
+    sound.currentTime = 0;
+    sound.play();
+}
+
+function updateSelection(playSound = true) {
+    games.forEach(g => g.classList.remove('selected'));
+    const selected = games[current];
+    selected.classList.add('selected');
+
+    title.textContent = selected.dataset.title || "";
+
+    selected.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center'
+    });
+
+    if (playSound) play(selectSound);
+}
+
+function launchGame() {
+    const selected = games[current];
+
+    play(openSound);
+
+    selected.classList.add('zooming');
+
+    games.forEach((g, i) => {
+        if (i !== current) g.style.opacity = "0";
+    });
+
+    title.style.opacity = "0";
+
+    setTimeout(() => {
+        menu.classList.add('active');
+
+        btn.textContent = selected.dataset.btn;
+        btn.onclick = () => window.location.href = selected.dataset.link;
+    }, 400);
+}
+
+games.forEach((game, index) => {
+    game.addEventListener('click', () => {
+
+        const wasSame = (current === index);
+
+        if (!wasSame) {
+            current = index;
+            updateSelection(true);
+            return;
+        }
+
+        if (game.dataset.disabled === "true") return;
+
+        launchGame();
+    });
+});
+
+updateSelection(false);
+</script>
+
+</body>
+</html>
